@@ -78,8 +78,8 @@ pipeline {
 
     stage('component test') {
       when {
-        { not
-        branch 'development'
+        not {
+          branch 'development'
         }
       }
       options {
