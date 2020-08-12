@@ -7,6 +7,7 @@ pipeline {
     stage('Clone Down') {
       steps {
         stash excludes: '.git', name: 'code'
+        deleteDir()
       }
     }
 
@@ -39,6 +40,7 @@ pipeline {
           }
         }
         stage('Test') {
+          when { }
           options {
             skipDefaultCheckout true
           }
@@ -58,6 +60,10 @@ pipeline {
     }
 
     stage('push docker app') {
+      when {
+        beforeAgent true
+        branch 'master'
+      }
       environment {
         DOCKERCREDS = credentials('docker_login') //use the credentials just created in this stage
       }
@@ -67,6 +73,21 @@ pipeline {
         /* groovylint-disable-next-line LineLength */
         sh 'echo "$DOCKERCREDS_PSW" | docker login -u "$DOCKERCREDS_USR" --password-stdin' //login to docker hub with the credentials above
         sh 'ci/push-docker.sh'
+      }
+    }
+
+    stage('component test') {
+      when {
+        { not
+        branch 'development'
+        }
+      }
+      options {
+        skipDefaultCheckout(true)
+      }
+      steps {
+        unstash 'code'
+        sh 'ci/component-test.sh'
       }
     }
   }
